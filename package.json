@@ -21,5 +21,21 @@
   "bugs": {
     "url": "https://github.com/qianbin/connex.driver-nodejs/issues"
   },
-  "homepage": "https://github.com/qianbin/connex.driver-nodejs#readme"
+  "homepage": "https://github.com/qianbin/connex.driver-nodejs#readme",
+  "peerDependencies": {
+    "@vechain/connex-framework": "github:qianbin/connex-framework"
+  },
+  "devDependencies": {
+    "@types/lodash.clonedeep": "^4.5.6",
+    "@vechain/connex-framework": "github:qianbin/connex-framework",
+    "ts-node": "^8.2.0",
+    "tslint": "^5.17.0",
+    "typescript": "^3.5.1"
+  },
+  "dependencies": {
+    "axios": "^0.19.0",
+    "compare-versions": "^3.4.0",
+    "lodash.clonedeep": "^4.5.0",
+    "thor-devkit": "^0.11.0"
+  }
 }

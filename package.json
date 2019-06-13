@@ -1,5 +1,5 @@
 {
-  "name": "connex.driver-nodejs",
+  "name": "@vechain/connex.driver-nodejs",
   "version": "1.0.0",
   "description": "Connex framework driver implementation in NodeJS",
   "main": "index.js",
@@ -26,7 +26,6 @@
     "@vechain/connex-framework": "github:qianbin/connex-framework"
   },
   "devDependencies": {
-    "@types/lodash.clonedeep": "^4.5.6",
     "@vechain/connex-framework": "github:qianbin/connex-framework",
     "ts-node": "^8.2.0",
     "tslint": "^5.17.0",
@@ -35,7 +34,6 @@
   "dependencies": {
     "axios": "^0.19.0",
     "compare-versions": "^3.4.0",
-    "lodash.clonedeep": "^4.5.0",
     "thor-devkit": "^0.11.0"
   }
 }

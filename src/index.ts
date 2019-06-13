@@ -80,7 +80,7 @@ export class DriverNodeJS implements Connex.Driver {
         unsignedTx?: { raw: string; origin: string; } | undefined;
         doSign(delegatorSignature?: string | undefined): Promise<Connex.Vendor.SigningService.TxResponse>;
     }> {
-        const acc = options.signer ? this.wallet.list().find(a => a.address === options.signer) : this.wallet.list()[0]
+        const acc = options.signer ? this.wallet.list.find(a => a.address === options.signer) : this.wallet.list[0]
         if (!acc) {
             throw new Error('account missing')
         }
@@ -127,7 +127,7 @@ export class DriverNodeJS implements Connex.Driver {
         msg: Connex.Vendor.SigningService.CertMessage,
         options: { signer?: string | undefined; link?: string | undefined; }
     ) {
-        const acc = options.signer ? this.wallet.list().find(a => a.address === options.signer) : this.wallet.list()[0]
+        const acc = options.signer ? this.wallet.list.find(a => a.address === options.signer) : this.wallet.list[0]
         if (!acc) {
             throw new Error('account missing')
         }
@@ -148,7 +148,7 @@ export class DriverNodeJS implements Connex.Driver {
         }
     }
     public isAddressOwned(addr: string) {
-        return this.wallet.list().findIndex(a => a.address === addr) >= 0
+        return this.wallet.list.findIndex(a => a.address === addr) >= 0
     }
 
     private sendTx(raw: string) {

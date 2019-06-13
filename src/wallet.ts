@@ -20,7 +20,7 @@ export function newWallet() {
             list = list.filter(i => i.address !== addr)
             return oldList.length !== list.length
         },
-        list() {
+        get list() {
             return list.map(i => {
                 return {
                     address: i.address,

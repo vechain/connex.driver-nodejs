@@ -1,5 +1,5 @@
 import Axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios'
-import compareVersions from 'compare-versions'
+import * as compareVersions from 'compare-versions'
 
 export class Net {
     private axios: AxiosInstance

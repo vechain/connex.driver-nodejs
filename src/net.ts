@@ -53,6 +53,7 @@ class NetError extends Error {
         } else {
             super(`${err.config.method} ${err.config.url}: ${err.message}`)
         }
-        this.name = NetError.name
     }
 }
+
+NetError.prototype.name = NetError.name

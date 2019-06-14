@@ -2,10 +2,17 @@ import '@vechain/connex-framework'
 import { Net } from './net'
 import { newWallet } from './wallet'
 import { Certificate, Transaction, cry } from 'thor-devkit'
-import { randomBytes } from 'crypto';
+import { randomBytes } from 'crypto'
+
+export interface TxOptions {
+    expiration?: number
+    gasPriceCoef?: number
+
+    watcher?: (txObj: { id: string, raw: string, resend: () => Promise<void> }) => void
+}
 
 export class DriverNodeJS implements Connex.Driver {
-    public static async createAuto(baseUrl: string) {
+    public static async connect(baseUrl: string) {
         const net = new Net(baseUrl)
         const genesis = await net.httpGet('/blocks/0')
         return new DriverNodeJS(baseUrl, genesis)
@@ -14,6 +21,7 @@ export class DriverNodeJS implements Connex.Driver {
     public readonly genesis: Connex.Thor.Block
     public readonly head: Connex.Thor.Status['head']
     public readonly wallet = newWallet()
+    public readonly txOptions: TxOptions = {}
 
     private readonly net: Net
 
@@ -92,9 +100,9 @@ export class DriverNodeJS implements Connex.Driver {
         const tx = new Transaction({
             chainTag: Number.parseInt(this.genesis.id.slice(-2), 16),
             blockRef: this.head.id.slice(0, 18),
-            expiration: 18,
+            expiration: this.txOptions.expiration || 18,
             clauses,
-            gasPriceCoef: 0,
+            gasPriceCoef: this.txOptions.gasPriceCoef || 0,
             gas,
             dependsOn: options.dependsOn || null,
             nonce: '0x' + randomBytes(8).toString('hex'),
@@ -115,6 +123,15 @@ export class DriverNodeJS implements Connex.Driver {
                 }
                 tx.signature = sig
                 const raw = '0x' + tx.encode().toString('hex')
+                if (this.txOptions.watcher) {
+                    this.txOptions.watcher({
+                        id: tx.id!,
+                        raw,
+                        resend: async () => {
+                            await this.sendTx(raw)
+                        }
+                    })
+                }
                 await this.sendTx(raw)
                 return {
                     txid: tx.id!,
@@ -158,19 +175,17 @@ export class DriverNodeJS implements Connex.Driver {
     private async pollLoop() {
         for (; ;) {
             try {
-                const startTime = Date.now()
+                const blockInterval = sleep(10 * 1000)
                 const best = (await this.net.httpGet('/blocks/best')) as Connex.Thor.Block
-                this.head.id = best.id
-                this.head.number = best.number
-                this.head.timestamp = best.timestamp
-                this.head.parentID = best.parentID
-
-                const sleepTime = 10 * 1000 - (Date.now() - startTime)
-                if (sleepTime > 0) {
-                    await sleep(sleepTime)
+                if (best.id !== this.head.id) {
+                    this.head.id = best.id
+                    this.head.number = best.number
+                    this.head.timestamp = best.timestamp
+                    this.head.parentID = best.parentID
                 }
+                await blockInterval
             } catch (err) {
-                await sleep(5 * 1000)
+                await sleep(15 * 1000)
             }
         }
     }
@@ -184,9 +199,8 @@ export class DriverNodeJS implements Connex.Driver {
 
         return intrinsicGas + (execGas ? (execGas + 15000) : 0)
     }
-
 }
 
 function sleep(ms: number) {
-    return new Promise(resolve => setTimeout(resolve, ms))
+    return new Promise<void>(resolve => setTimeout(resolve, ms))
 }

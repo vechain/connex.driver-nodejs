@@ -14,8 +14,16 @@ export interface TxOptions {
 export class DriverNodeJS implements Connex.Driver {
     public static async connect(baseUrl: string) {
         const net = new Net(baseUrl)
-        const genesis = await net.httpGet('/blocks/0')
-        return new DriverNodeJS(baseUrl, genesis)
+        const [genesis, best] = await Promise.all<Connex.Thor.Block>([
+            net.httpGet('/blocks/0'),
+            net.httpGet('/blocks/best')
+        ])
+        return new DriverNodeJS(baseUrl, genesis, {
+            id: best.id,
+            number: best.number,
+            timestamp: best.timestamp,
+            parentID: best.parentID
+        })
     }
 
     public readonly genesis: Connex.Thor.Block
@@ -25,15 +33,11 @@ export class DriverNodeJS implements Connex.Driver {
 
     private readonly net: Net
 
-    constructor(baseUrl: string, genesis: Connex.Thor.Block) {
+    constructor(baseUrl: string, genesis: Connex.Thor.Block, head: Connex.Thor.Status['head']) {
         this.genesis = genesis
+        this.head = head
         this.net = new Net(baseUrl, { 'x-genesis-id': genesis.id })
-        this.head = {
-            id: genesis.id,
-            number: genesis.number,
-            timestamp: genesis.timestamp,
-            parentID: genesis.parentID,
-        }
+
         this.pollLoop()
     }
 

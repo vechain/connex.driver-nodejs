@@ -77,17 +77,14 @@ export class DriverNodeJS implements Connex.Driver {
     public async signTx(
         msg: Connex.Vendor.SigningService.TxMessage,
         options: {
-            delegated?: boolean | undefined;
             signer?: string | undefined;
             gas?: number | undefined;
             dependsOn?: string | undefined;
             link?: string | undefined;
             comment?: string | undefined;
+            delegateHandler?: Connex.Vendor.SigningService.DelegationHandler
         }
-    ): Promise<{
-        unsignedTx?: { raw: string; origin: string; } | undefined;
-        doSign(delegatorSignature?: string | undefined): Promise<Connex.Vendor.SigningService.TxResponse>;
-    }> {
+    ): Promise<Connex.Vendor.SigningService.TxResponse> {
         const acc = options.signer ? this.wallet.list.find(a => a.address === options.signer) : this.wallet.list[0]
         if (!acc) {
             throw new Error('account missing')
@@ -107,39 +104,37 @@ export class DriverNodeJS implements Connex.Driver {
             dependsOn: options.dependsOn || null,
             nonce: '0x' + randomBytes(8).toString('hex'),
             reserved: {
-                features: options.delegated ? 1 : 0
+                features: options.delegateHandler ? 1 : 0
             }
         })
-        return {
-            unsignedTx: {
+        if (options.delegateHandler) {
+            const result = await options.delegateHandler({
                 raw: '0x' + tx.encode().toString('hex'),
                 origin: acc.address
-            },
+            })
+            const sig = acc.sign(tx.signingHash())
+            tx.signature = Buffer.concat([sig, Buffer.from(result.signature.slice(2), 'hex')])
+        } else {
+            tx.signature = acc.sign(tx.signingHash())
+        }
 
-            doSign: async (delegatorSignature) => {
-                let sig = acc.sign(tx.signingHash())
-                if (delegatorSignature) {
-                    sig = Buffer.concat([sig, Buffer.from(delegatorSignature.slice(2), 'hex')])
+        const raw = '0x' + tx.encode().toString('hex')
+        if (this.txOptions.watcher) {
+            this.txOptions.watcher({
+                id: tx.id!,
+                raw,
+                resend: async () => {
+                    await this.sendTx(raw)
                 }
-                tx.signature = sig
-                const raw = '0x' + tx.encode().toString('hex')
-                if (this.txOptions.watcher) {
-                    this.txOptions.watcher({
-                        id: tx.id!,
-                        raw,
-                        resend: async () => {
-                            await this.sendTx(raw)
-                        }
-                    })
-                }
-                await this.sendTx(raw)
-                return {
-                    txid: tx.id!,
-                    signer: acc.address
-                }
-            }
+            })
+        }
+        await this.sendTx(raw)
+        return {
+            txid: tx.id!,
+            signer: acc.address
         }
     }
+
     public async signCert(
         msg: Connex.Vendor.SigningService.CertMessage,
         options: { signer?: string | undefined; link?: string | undefined; }

@@ -27,10 +27,10 @@
   },
   "homepage": "https://github.com/qianbin/connex.driver-nodejs#readme",
   "peerDependencies": {
-    "@vechain/connex-framework": "^1.0.0-alpha-1"
+    "@vechain/connex-framework": "^1.0.0-alpha-2"
   },
   "devDependencies": {
-    "@vechain/connex-framework": "^1.0.0-alpha-1",
+    "@vechain/connex-framework": "^1.0.0-alpha-2",
     "ts-node": "^8.2.0",
     "tslint": "^5.17.0",
     "typescript": "^3.5.1"

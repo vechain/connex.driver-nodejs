@@ -17,7 +17,7 @@ export function newWallet() {
         },
         remove(addr: string) {
             const oldList = list
-            list = list.filter(i => i.address !== addr)
+            list = list.filter(i => i.address !== addr.toLowerCase())
             return oldList.length !== list.length
         },
         get list() {

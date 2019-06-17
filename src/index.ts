@@ -4,9 +4,9 @@ import { newWallet } from './wallet'
 import { Certificate, Transaction, cry } from 'thor-devkit'
 import { randomBytes } from 'crypto'
 
-export interface TxOptions {
-    expiration?: number
-    gasPriceCoef?: number
+export interface TxConfig {
+    expiration: number
+    gasPriceCoef: number
 
     watcher?: (txObj: { id: string, raw: string, resend: () => Promise<void> }) => void
 }
@@ -29,7 +29,10 @@ export class DriverNodeJS implements Connex.Driver {
     public readonly genesis: Connex.Thor.Block
     public readonly head: Connex.Thor.Status['head']
     public readonly wallet = newWallet()
-    public readonly txOptions: TxOptions = {}
+    public readonly txConfig: TxConfig = {
+        expiration: 18,
+        gasPriceCoef: 0
+    }
 
     private readonly net: Net
 
@@ -101,9 +104,9 @@ export class DriverNodeJS implements Connex.Driver {
         const tx = new Transaction({
             chainTag: Number.parseInt(this.genesis.id.slice(-2), 16),
             blockRef: this.head.id.slice(0, 18),
-            expiration: this.txOptions.expiration || 18,
+            expiration: this.txConfig.expiration,
             clauses,
-            gasPriceCoef: this.txOptions.gasPriceCoef || 0,
+            gasPriceCoef: this.txConfig.gasPriceCoef,
             gas,
             dependsOn: options.dependsOn || null,
             nonce: '0x' + randomBytes(8).toString('hex'),
@@ -123,8 +126,8 @@ export class DriverNodeJS implements Connex.Driver {
         }
 
         const raw = '0x' + tx.encode().toString('hex')
-        if (this.txOptions.watcher) {
-            this.txOptions.watcher({
+        if (this.txConfig.watcher) {
+            this.txConfig.watcher({
                 id: tx.id!,
                 raw,
                 resend: async () => {

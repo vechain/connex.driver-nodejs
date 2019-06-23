@@ -27,7 +27,6 @@ export class DriverNodeJS implements Connex.Driver {
     }
 
     public readonly genesis: Connex.Thor.Block
-    public readonly head: Connex.Thor.Status['head']
     public readonly wallet = newWallet()
     public readonly txConfig: TxConfig = {
         expiration: 18,
@@ -35,6 +34,7 @@ export class DriverNodeJS implements Connex.Driver {
     }
 
     private readonly net: Net
+    private head: Connex.Thor.Status['head']
 
     constructor(baseUrl: string, genesis: Connex.Thor.Block, head: Connex.Thor.Status['head']) {
         this.genesis = genesis
@@ -42,6 +42,10 @@ export class DriverNodeJS implements Connex.Driver {
         this.net = new Net(baseUrl, { 'x-genesis-id': genesis.id })
 
         this.pollLoop()
+    }
+
+    public getHead() {
+        return this.head
     }
 
     public getBlock(revision: string | number) {
@@ -65,7 +69,13 @@ export class DriverNodeJS implements Connex.Driver {
         return this.net.httpGet(`/accounts/${addr}/storage/${key}`, { revision })
     }
     public explain(
-        arg: { clauses: any[]; caller?: string | undefined; gas?: number | undefined; gasPrice?: string | undefined; },
+        arg: {
+            clauses: Array<{
+                to: string | null
+                value: string
+                data: string
+            }>; caller?: string | undefined; gas?: number | undefined; gasPrice?: string | undefined;
+        },
         revision: string,
         cacheTies?: string[] | undefined
     ): Promise<any[]> {
@@ -82,7 +92,12 @@ export class DriverNodeJS implements Connex.Driver {
     }
 
     public async signTx(
-        msg: Connex.Vendor.SigningService.TxMessage,
+        msg: Array<{
+            to: string | null
+            value: string
+            data: string
+            comment?: string
+        }>,
         options: {
             signer?: string | undefined;
             gas?: number | undefined;
@@ -191,7 +206,13 @@ export class DriverNodeJS implements Connex.Driver {
             }
         }
     }
-    private async estimateGas(clauses: Connex.Thor.Clause[], caller: string) {
+    private async estimateGas(
+        clauses: Array<{
+            to: string | null
+            value: string
+            data: string
+        }>,
+        caller: string) {
         const outputs = await this.explain({
             clauses,
             caller,

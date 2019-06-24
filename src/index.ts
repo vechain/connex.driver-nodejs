@@ -195,10 +195,13 @@ export class DriverNodeJS implements Connex.Driver {
                 const blockInterval = sleep(10 * 1000)
                 const best = (await this.net.httpGet('/blocks/best')) as Connex.Thor.Block
                 if (best.id !== this.head.id) {
-                    this.head.id = best.id
-                    this.head.number = best.number
-                    this.head.timestamp = best.timestamp
-                    this.head.parentID = best.parentID
+                    this.head = {
+                        id: best.id,
+                        number: best.number,
+                        timestamp: best.timestamp,
+                        parentID: best.parentID,
+                        txsFeatures: best.txsFeatures
+                    }
                 }
                 await blockInterval
             } catch (err) {

@@ -22,7 +22,8 @@ export class DriverNodeJS implements Connex.Driver {
             id: best.id,
             number: best.number,
             timestamp: best.timestamp,
-            parentID: best.parentID
+            parentID: best.parentID,
+            txsFeatures: best.txsFeatures
         })
     }
 

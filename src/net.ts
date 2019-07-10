@@ -13,16 +13,16 @@ export class Net {
         })
     }
 
-    public httpGet(uri: string, query?: object) {
-        return this.handleHttpResponse(() => this.axios.get(uri, { params: query }))
+    public httpGet<T>(uri: string, query?: object) {
+        return this.handleHttpResponse<T>(() => this.axios.get(uri, { params: query }))
     }
 
-    public httpPost(uri: string, data: any, query?: object) {
-        return this.handleHttpResponse(() => this.axios.post(uri, data, { params: query }))
+    public httpPost<T>(uri: string, data: any, query?: object) {
+        return this.handleHttpResponse<T>(() => this.axios.post(uri, data, { params: query }))
     }
 
-    private async handleHttpResponse(f: () => Promise<AxiosResponse>) {
-        let resp: AxiosResponse
+    private async handleHttpResponse<T>(f: () => Promise<AxiosResponse<T>>) {
+        let resp: AxiosResponse<T>
         try {
             resp = await f()
         } catch (err) {

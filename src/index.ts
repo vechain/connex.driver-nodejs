@@ -50,24 +50,24 @@ export class DriverNodeJS implements Connex.Driver {
     }
 
     public getBlock(revision: string | number) {
-        return this.net.httpGet(`/blocks/${revision}`)
+        return this.net.httpGet<Connex.Thor.Block|null>(`/blocks/${revision}`)
     }
 
     public getTransaction(id: string, head: string) {
-        return this.net.httpGet(`/transactions/${id}`, { head })
+        return this.net.httpGet<Connex.Thor.Transaction | null>(`/transactions/${id}`, { head })
     }
 
     public getReceipt(id: string, head: string) {
-        return this.net.httpGet(`/transactions/${id}/receipt`, { head })
+        return this.net.httpGet<Connex.Thor.Receipt | null>(`/transactions/${id}/receipt`, { head })
     }
     public getAccount(addr: string, revision: string) {
-        return this.net.httpGet(`/accounts/${addr}`, { revision })
+        return this.net.httpGet<Connex.Thor.Account>(`/accounts/${addr}`, { revision })
     }
     public getCode(addr: string, revision: string) {
-        return this.net.httpGet(`/accounts/${addr}/code`, { revision })
+        return this.net.httpGet<Connex.Thor.Code>(`/accounts/${addr}/code`, { revision })
     }
     public getStorage(addr: string, key: string, revision: string) {
-        return this.net.httpGet(`/accounts/${addr}/storage/${key}`, { revision })
+        return this.net.httpGet<Connex.Thor.Storage>(`/accounts/${addr}/storage/${key}`, { revision })
     }
     public explain(
         arg: {
@@ -79,17 +79,17 @@ export class DriverNodeJS implements Connex.Driver {
         },
         revision: string,
         cacheTies?: string[] | undefined
-    ): Promise<any[]> {
-        return this.net.httpPost('/accounts/*', arg, { revision })
+    ) {
+        return this.net.httpPost<Connex.Thor.VMOutput[]>('/accounts/*', arg, { revision })
     }
 
     public filterEventLogs(
         arg: { range: any; options: { offset: number; limit: number; }; criteriaSet: any[]; order: 'asc' | 'desc'; }) {
-        return this.net.httpPost('/logs/event', arg)
+        return this.net.httpPost<Connex.Thor.Event[]>('/logs/event', arg)
     }
     public filterTransferLogs(
         arg: { range: any; options: { offset: number; limit: number; }; criteriaSet: any[]; order: 'asc' | 'desc'; }) {
-        return this.net.httpPost('/logs/transfer', arg)
+        return this.net.httpPost<Connex.Thor.Transfer[]>('/logs/transfer', arg)
     }
 
     public async signTx(

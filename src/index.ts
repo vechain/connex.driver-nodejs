@@ -3,6 +3,7 @@ import { Net } from './net'
 import { newWallet } from './wallet'
 import { Certificate, Transaction, cry } from 'thor-devkit'
 import { randomBytes } from 'crypto'
+import * as Beater from './beater'
 
 export interface TxConfig {
     expiration: number
@@ -36,13 +37,17 @@ export class DriverNodeJS implements Connex.Driver {
 
     private readonly net: Net
     private head: Connex.Thor.Status['head']
+    private timer: NodeJS.Timeout|null
 
     constructor(baseUrl: string, genesis: Connex.Thor.Block, head: Connex.Thor.Status['head']) {
         this.genesis = genesis
         this.head = head
         this.net = new Net(baseUrl, { 'x-genesis-id': genesis.id })
 
-        this.pollLoop()
+        this.timer = null
+        this.scheduleHttp(0)
+
+        Beater.listen(this.beat.bind(this), baseUrl, genesis, this.head)
     }
 
     public getHead() {
@@ -190,26 +195,6 @@ export class DriverNodeJS implements Connex.Driver {
         return this.net.httpPost('/transactions', { raw })
     }
 
-    private async pollLoop() {
-        for (; ;) {
-            try {
-                const blockInterval = sleep(10 * 1000)
-                const best = (await this.net.httpGet('/blocks/best')) as Connex.Thor.Block
-                if (best.id !== this.head.id) {
-                    this.head = {
-                        id: best.id,
-                        number: best.number,
-                        timestamp: best.timestamp,
-                        parentID: best.parentID,
-                        txsFeatures: best.txsFeatures
-                    }
-                }
-                await blockInterval
-            } catch (err) {
-                await sleep(15 * 1000)
-            }
-        }
-    }
     private async estimateGas(
         clauses: Array<{
             to: string | null
@@ -226,8 +211,45 @@ export class DriverNodeJS implements Connex.Driver {
 
         return intrinsicGas + (execGas ? (execGas + 15000) : 0)
     }
-}
 
-function sleep(ms: number) {
-    return new Promise<void>(resolve => setTimeout(resolve, ms))
+    private beat(b: Beater.Beat) {
+        if (b.obsolete) {
+            return
+        }
+        if (b.id !== this.head.id) {
+            this.head.id = b.id
+            this.head.number = b.number
+            this.head.timestamp = b.timestamp
+            this.head.parentID = b.parentID
+        }
+        this.scheduleHttp(60 * 1000)
+    }
+
+    private scheduleHttp(afterMs: number) {
+        if (this.timer) {
+            clearTimeout(this.timer)
+            this.timer = null
+        }
+
+        this.timer = setTimeout(async () => {
+            try {
+                const best = await this.net.httpGet<Connex.Thor.Block>('/blocks/best')
+                if (lastTimer === this.timer) {
+                    if (best.id !== this.head.id) {
+                        this.head.id = best.id
+                        this.head.number = best.number
+                        this.head.timestamp = best.timestamp
+                        this.head.parentID = best.parentID
+                    }
+                    this.scheduleHttp(5 * 1000)
+                }
+            } catch (err) {
+                if (lastTimer === this.timer) {
+                    this.scheduleHttp(20 * 1000)
+                }
+            }
+
+        }, afterMs)
+        const lastTimer = this.timer
+    }
 }

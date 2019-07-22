@@ -7,6 +7,7 @@ export interface Beat {
     id: string
     parentID: string
     timestamp: number
+    txsFeatures?: number
     obsolete: boolean
 }
 

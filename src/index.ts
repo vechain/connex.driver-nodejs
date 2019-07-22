@@ -4,6 +4,9 @@ import { newWallet } from './wallet'
 import { Certificate, Transaction, cry } from 'thor-devkit'
 import { randomBytes } from 'crypto'
 import * as Beater from './beater'
+import { EventEmitter } from 'events'
+
+const HEAD_CHANGED_EVENT_NAME = 'headChanged'
 
 export interface TxConfig {
     expiration: number
@@ -14,11 +17,9 @@ export interface TxConfig {
 
 export class DriverNodeJS implements Connex.Driver {
     public static async connect(baseUrl: string) {
-        const net = new Net(baseUrl)
-        const [genesis, best] = await Promise.all<Connex.Thor.Block>([
-            net.httpGet('/blocks/0'),
-            net.httpGet('/blocks/best')
-        ])
+        const genesis: Connex.Thor.Block = await new Net(baseUrl).httpGet('/blocks/0')
+        const best: Connex.Thor.Block = await new Net(baseUrl, { 'x-genesis-id': genesis.id }).httpGet('/blocks/best')
+
         return new DriverNodeJS(baseUrl, genesis, {
             id: best.id,
             number: best.number,
@@ -37,25 +38,30 @@ export class DriverNodeJS implements Connex.Driver {
 
     private readonly net: Net
     private head: Connex.Thor.Status['head']
-    private timer: NodeJS.Timeout|null
+    private timer: NodeJS.Timeout | null = null
+    private readonly emitter = new EventEmitter()
 
-    constructor(baseUrl: string, genesis: Connex.Thor.Block, head: Connex.Thor.Status['head']) {
+    constructor(baseUrl: string, genesis: Connex.Thor.Block, readonly initialHead: Connex.Thor.Status['head']) {
         this.genesis = genesis
-        this.head = head
+        this.head = initialHead
         this.net = new Net(baseUrl, { 'x-genesis-id': genesis.id })
+        this.emitter.setMaxListeners(0)
 
-        this.timer = null
         this.scheduleHttp(0)
 
-        Beater.listen(this.beat.bind(this), baseUrl, genesis, this.head)
+        Beater.listen(beat => this.handleBeat(beat), baseUrl, genesis, initialHead)
     }
 
     public getHead() {
-        return this.head
+        return new Promise<Connex.Thor.Status['head']>(resolve => {
+            this.emitter.once(HEAD_CHANGED_EVENT_NAME, () => {
+                resolve({ ...this.head })
+            })
+        })
     }
 
     public getBlock(revision: string | number) {
-        return this.net.httpGet<Connex.Thor.Block|null>(`/blocks/${revision}`)
+        return this.net.httpGet<Connex.Thor.Block | null>(`/blocks/${revision}`)
     }
 
     public getTransaction(id: string, head: string) {
@@ -212,7 +218,7 @@ export class DriverNodeJS implements Connex.Driver {
         return intrinsicGas + (execGas ? (execGas + 15000) : 0)
     }
 
-    private beat(b: Beater.Beat) {
+    private handleBeat(b: Beater.Beat) {
         if (b.obsolete) {
             return
         }
@@ -221,6 +227,8 @@ export class DriverNodeJS implements Connex.Driver {
             this.head.number = b.number
             this.head.timestamp = b.timestamp
             this.head.parentID = b.parentID
+            this.head.txsFeatures = b.txsFeatures
+            this.emitter.emit(HEAD_CHANGED_EVENT_NAME)
         }
         this.scheduleHttp(60 * 1000)
     }
@@ -240,6 +248,8 @@ export class DriverNodeJS implements Connex.Driver {
                         this.head.number = best.number
                         this.head.timestamp = best.timestamp
                         this.head.parentID = best.parentID
+                        this.head.txsFeatures = best.txsFeatures
+                        this.emitter.emit(HEAD_CHANGED_EVENT_NAME)
                     }
                     this.scheduleHttp(5 * 1000)
                 }

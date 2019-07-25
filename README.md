@@ -16,23 +16,23 @@ The [REPL playground](https://github.com/vechain/connex-repl) is a good start.
 
 ```typescript
 import { Framework } from '@vechain/connex-framework'
-import { DriverNodeJS } from '@vechain/connex.driver-nodejs'
+import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex.driver-nodejs'
 
-(async () => {
-    const driver = await DriverNodeJS.connect('http://localhost:8669/')
-    const connex = new Framework(driver)
-    // here get connex object ready to use
+const wallet = new SimpleWallet()
+// add account by importing private key
+wallet.import('<private key>')
 
-    const wallet = driver.wallet
-    // add account by importing private key
-    wallet.add('<private key>')
-    // remove account by address
-    wallet.remove('<address>')
-    // list all accounts
-    wallet.list
+const driver = await Driver.connect(new SimpleNet('http://localhost:8669/'), wallet)
+const connex = new Framework(driver)
+// here get connex object ready to use
+...
 
-    // config tx parameters, e.g. expiration, gasPriceCoef, watcher
-    const txConfig = driver.txConfig
+// config tx parameters, e.g. expiration, gasPriceCoef
+driver.txParams.expiration = 18
+driver.txParams.gasPriceCoef = 128
 
-})()
+// watch committed tx
+driver.onTxCommit = txObj => {
+    // 
+}
 ```

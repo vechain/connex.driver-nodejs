@@ -47,12 +47,13 @@ export class Driver extends DriverNoVendor {
         super(net, genesis, initialHead)
     }
 
-    public async signTx(
+    public async buildTx(
         msg: Array<{
             to: string | null
             value: string
             data: string
             comment?: string
+            abi?: object
         }>,
         options: {
             signer?: string | undefined;
@@ -60,16 +61,22 @@ export class Driver extends DriverNoVendor {
             dependsOn?: string | undefined;
             link?: string | undefined;
             comment?: string | undefined;
-            delegateHandler?: Connex.Vendor.SigningService.DelegationHandler
         }
-    ): Promise<Connex.Vendor.SigningService.TxResponse> {
+    ): Promise<{
+        origin: string
+        raw: string
+        sign(delegation?: {
+            signature?: string
+            error?: Error
+        }): Promise<Connex.Vendor.TxResponse>
+    }> {
         const key = this.findKey(options.signer)
 
         const clauses = msg.map(c => ({ to: c.to, value: c.value, data: c.data }))
         const gas = options.gas ||
             (await this.estimateGas(clauses, key.address))
 
-        const tx = new Transaction({
+        const txBody: Transaction.Body = {
             chainTag: Number.parseInt(this.genesis.id.slice(-2), 16),
             blockRef: this.head.id.slice(0, 18),
             expiration: this.txParams.expiration,
@@ -77,42 +84,51 @@ export class Driver extends DriverNoVendor {
             gasPriceCoef: this.txParams.gasPriceCoef,
             gas,
             dependsOn: options.dependsOn || null,
-            nonce: '0x' + randomBytes(8).toString('hex'),
-            reserved: {
-                features: options.delegateHandler ? 1 : 0
-            }
-        })
-
-        const originSig = key.sign(tx.signingHash())
-        if (options.delegateHandler) {
-            const result = await options.delegateHandler({
-                raw: '0x' + tx.encode().toString('hex'),
-                origin: key.address
-            })
-            tx.signature = Buffer.concat([originSig, Buffer.from(result.signature.slice(2), 'hex')])
-        } else {
-            tx.signature = originSig
+            nonce: '0x' + randomBytes(8).toString('hex')
         }
-
-        const raw = '0x' + tx.encode().toString('hex')
-        if (this.onTxCommit) {
-            this.onTxCommit({
-                id: tx.id!,
-                raw,
-                resend: async () => {
-                    await this.sendTx(raw)
-                }
-            })
-        }
-        await this.sendTx(raw)
+        const delegatedTx = new Transaction({ ...txBody, reserved: { features: 1/* vip191 */ } })
         return {
-            txid: tx.id!,
-            signer: key.address
+            raw: '0x' + delegatedTx.encode().toString('hex'),
+            origin: key.address,
+            sign: async delegation => {
+                let tx
+                if (delegation && !delegation.error) {
+                    tx = delegatedTx
+                    const originSig = key.sign(tx.signingHash())
+                    tx.signature = Buffer.concat([
+                        originSig,
+                        Buffer.from(delegation.signature!.slice(2), 'hex')])
+
+                } else {
+                    if (delegation && delegation.error) {
+                        // tslint:disable-next-line: no-console
+                        console.warn('tx delegation error: ', delegation.error)
+                        // fallback to non-vip191 tx
+                    }
+                    tx = new Transaction(txBody)
+                    tx.signature = key.sign(tx.signingHash())
+                }
+                const raw = '0x' + tx.encode().toString('hex')
+                if (this.onTxCommit) {
+                    this.onTxCommit({
+                        id: tx.id!,
+                        raw,
+                        resend: async () => {
+                            await this.sendTx(raw)
+                        }
+                    })
+                }
+                await this.sendTx(raw)
+                return {
+                    txid: tx.id!,
+                    signer: key.address
+                }
+            }
         }
     }
 
     public async signCert(
-        msg: Connex.Vendor.SigningService.CertMessage,
+        msg: Connex.Vendor.CertMessage,
         options: { signer?: string | undefined; link?: string | undefined; }
     ) {
         const key = this.findKey(options.signer)

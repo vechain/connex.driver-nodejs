@@ -59,10 +59,10 @@ export class DriverNoVendor implements Connex.Driver {
     public filterTransferLogs(arg: object) {
         return this.httpPost('logs/transfer', arg)
     }
-    public signTx(msg: any, options: any): Promise<Connex.Vendor.SigningService.TxResponse> {
+    public buildTx(msg: any, options: any): Promise<any> {
         throw new Error('Method not implemented.')
     }
-    public signCert(msg: any, options: any): Promise<Connex.Vendor.SigningService.CertResponse> {
+    public signCert(msg: any, options: any): Promise<any> {
         throw new Error('Method not implemented.')
     }
     public isAddressOwned(addr: string): boolean {

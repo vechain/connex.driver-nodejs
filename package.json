@@ -1,6 +1,6 @@
 {
   "name": "@vechain/connex.driver-nodejs",
-  "version": "1.0.0-beta-5",
+  "version": "1.0.0-beta-7",
   "description": "Connex framework driver implementation in NodeJS",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

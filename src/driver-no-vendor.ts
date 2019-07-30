@@ -5,7 +5,7 @@ import { PromInt, InterruptedError } from './promint'
 
 /** class implements Connex.Driver leaves out Vendor related methods */
 export class DriverNoVendor implements Connex.Driver {
-    protected head: Connex.Thor.Status['head']
+    public head: Connex.Thor.Status['head']
 
     private headResolvers = [] as Array<() => void>
     private int = new PromInt()
@@ -13,7 +13,7 @@ export class DriverNoVendor implements Connex.Driver {
     constructor(
         private readonly net: Net,
         readonly genesis: Connex.Thor.Block,
-        readonly initialHead: Connex.Thor.Status['head']
+        initialHead: Connex.Thor.Status['head']
     ) {
         this.head = initialHead
         this.headTrackerLoop()
@@ -25,7 +25,7 @@ export class DriverNoVendor implements Connex.Driver {
     }
 
     // implementations
-    public getHead() {
+    public pollHead() {
         return this.int.wrap(
             new Promise<Connex.Thor.Status['head']>(resolve => {
                 this.headResolvers.push(() => resolve(this.head))
@@ -143,6 +143,7 @@ export class DriverNoVendor implements Connex.Driver {
                                 .replace(/^http:/i, 'ws:')
 
                             wsr = new WebSocketReader(wsURL)
+                            continue
                         }
                     }
                 } catch (err) {

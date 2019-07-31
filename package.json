@@ -26,19 +26,20 @@
     "url": "https://github.com/qianbin/connex.driver-nodejs/issues"
   },
   "homepage": "https://github.com/qianbin/connex.driver-nodejs#readme",
-  "peerDependencies": {
-    "@vechain/connex-framework": "^1.0.0-beta-8"
-  },
   "devDependencies": {
+    "@types/lru-cache": "^5.1.0",
     "@types/ws": "^6.0.1",
-    "@vechain/connex-framework": "^1.0.0-beta-8",
     "ts-node": "^8.2.0",
     "tslint": "^5.17.0",
     "typescript": "^3.5.1"
   },
   "dependencies": {
+    "@vechain/connex": "^1.3.2",
+    "@vechain/connex.driver": "^1.0.0-beta-9",
     "axios": "^0.19.0",
+    "bignumber.js": "^9.0.0",
     "isomorphic-ws": "^4.0.1",
+    "lru-cache": "^5.1.1",
     "thor-devkit": "^0.11.0",
     "ws": "^7.1.0"
   }

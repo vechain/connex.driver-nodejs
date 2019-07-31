@@ -2,13 +2,16 @@ import { Net } from './interfaces'
 import { WebSocketReader } from './websocket-reader'
 import * as NodeURL from 'url'
 import { PromInt, InterruptedError } from './promint'
+import { Cache } from './cache'
+import { blake2b256 } from 'thor-devkit/dist/cry'
 
 /** class implements Connex.Driver leaves out Vendor related methods */
 export abstract class DriverNoVendor implements Connex.Driver {
     public head: Connex.Thor.Status['head']
 
     private headResolvers = [] as Array<() => void>
-    private int = new PromInt()
+    private readonly int = new PromInt()
+    private readonly cache = new Cache()
 
     constructor(
         private readonly net: Net,
@@ -43,31 +46,43 @@ export abstract class DriverNoVendor implements Connex.Driver {
     }
 
     public getBlock(revision: string | number) {
-        return this.httpGet(`blocks/${revision}`)
+        return this.cache.getBlock(revision, () =>
+            this.httpGet(`blocks/${revision}`))
     }
-    public getTransaction(id: string, head: string) {
-        return this.httpGet(`transactions/${id}`, { head })
+    public getTransaction(id: string) {
+        return this.cache.getTx(id, () =>
+            this.httpGet(`transactions/${id}`, { head: this.head.id }))
     }
-    public getReceipt(id: string, head: string) {
-        return this.httpGet(`transactions/${id}/receipt`, { head })
+    public getReceipt(id: string) {
+        return this.cache.getReceipt(id, () =>
+            this.httpGet(`transactions/${id}/receipt`, { head: this.head.id }))
     }
     public getAccount(addr: string, revision: string) {
-        return this.httpGet(`accounts/${addr}`, { revision })
+        return this.cache.getAccount(addr, revision, () =>
+            this.httpGet(`accounts/${addr}`, { revision }))
     }
     public getCode(addr: string, revision: string) {
-        return this.httpGet(`accounts/${addr}/code`, { revision })
+        return this.cache.getTied(`code-${addr}`, revision, () =>
+            this.httpGet(`accounts/${addr}/code`, { revision }))
     }
     public getStorage(addr: string, key: string, revision: string) {
-        return this.httpGet(`accounts/${addr}/storage/${key}`, { revision })
+        return this.cache.getTied(`storage-${addr}-${key}`, revision, () =>
+            this.httpGet(`accounts/${addr}/storage/${key}`, { revision }))
     }
-    public explain(arg: object, revision: string, cacheTies?: string[]) {
-        return this.httpPost('accounts/*', arg, { revision })
+    public explain(arg: Connex.Driver.ExplainArg, revision: string, cacheTies?: string[]) {
+        const cacheKey = `explain-${blake2b256(JSON.stringify(arg)).toString('hex')}`
+        return this.cache.getTied(cacheKey, revision, () =>
+            this.httpPost('accounts/*', arg, { revision }), cacheTies)
     }
-    public filterEventLogs(arg: object) {
-        return this.httpPost('logs/event', arg)
+    public filterEventLogs(arg: Connex.Driver.FilterEventLogsArg) {
+        const cacheKey = `event-${blake2b256(JSON.stringify(arg)).toString('hex')}`
+        return this.cache.getTied(cacheKey, this.head.id, () =>
+            this.httpPost('logs/event', arg))
     }
     public filterTransferLogs(arg: object) {
-        return this.httpPost('logs/transfer', arg)
+        const cacheKey = `transfer-${blake2b256(JSON.stringify(arg)).toString('hex')}`
+        return this.cache.getTied(cacheKey, this.head.id, () =>
+            this.httpPost('logs/transfer', arg))
     }
     public abstract buildTx(
         msg: Array<{
@@ -131,6 +146,7 @@ export abstract class DriverNoVendor implements Connex.Driver {
                             parentID: beat.parentID,
                             txsFeatures: beat.txsFeatures
                         }
+                        this.cache.handleNewBlock(this.head, { k: beat.k, bits: beat.bloom })
                         this.emitNewHead()
                     }
                 } catch (err) {
@@ -154,6 +170,7 @@ export abstract class DriverNoVendor implements Connex.Driver {
                             parentID: best.parentID,
                             txsFeatures: best.txsFeatures
                         }
+                        this.cache.handleNewBlock(this.head, undefined, best)
                         this.emitNewHead()
                     }
 
@@ -197,6 +214,8 @@ interface Beat {
     id: string
     parentID: string
     timestamp: number
+    bloom: string
+    k: number
     txsFeatures?: number
     obsolete: boolean
 }

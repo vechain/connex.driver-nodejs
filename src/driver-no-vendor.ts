@@ -3,7 +3,7 @@ import { WebSocketReader } from './websocket-reader'
 import * as NodeURL from 'url'
 import { PromInt, InterruptedError } from './promint'
 import { Cache } from './cache'
-import { blake2b256 } from 'thor-devkit/dist/cry'
+import { blake2b256 } from 'thor-devkit/dist/cry/blake2b'
 
 /** class implements Connex.Driver leaves out Vendor related methods */
 export abstract class DriverNoVendor implements Connex.Driver {

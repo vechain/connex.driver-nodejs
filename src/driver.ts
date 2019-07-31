@@ -8,10 +8,11 @@ import { randomBytes } from 'crypto'
 export class Driver extends DriverNoVendor {
     /**
      * create driver instance
+     * it will fetch config(genesis, head) via net as construction params
      * @param net
      * @param wallet
      */
-    public static async connect(net: Net, wallet: Wallet) {
+    public static async connect(net: Net, wallet?: Wallet) {
         const genesis: Connex.Thor.Block = await net.http('GET', 'blocks/0')
         const best: Connex.Thor.Block = await net.http('GET', 'blocks/best',
             { headers: { 'x-genesis-id': genesis.id } })
@@ -26,7 +27,6 @@ export class Driver extends DriverNoVendor {
                 txsFeatures: best.txsFeatures
             },
             wallet)
-
     }
 
     /** handler to receive txs committed */
@@ -41,8 +41,8 @@ export class Driver extends DriverNoVendor {
     constructor(
         net: Net,
         genesis: Connex.Thor.Block,
-        initialHead: Connex.Thor.Status['head'],
-        private readonly wallet: Wallet
+        initialHead?: Connex.Thor.Status['head'],
+        private readonly wallet?: Wallet
     ) {
         super(net, genesis, initialHead)
     }
@@ -149,16 +149,18 @@ export class Driver extends DriverNoVendor {
         }
     }
     public isAddressOwned(addr: string) {
-        return this.wallet.list.findIndex(k => k.address === addr) >= 0
+        return this.wallet ? this.wallet.list.findIndex(k => k.address === addr) >= 0 : false
     }
 
     private findKey(addr?: string) {
-        const keys = this.wallet.list
-        const key = addr ? keys.find(k => k.address === addr) : keys[0]
-        if (!key) {
-            throw new Error('empty wallet')
+        if (this.wallet) {
+            const keys = this.wallet.list
+            const key = addr ? keys.find(k => k.address === addr) : keys[0]
+            if (key) {
+                return key
+            }
         }
-        return key
+        throw new Error('empty wallet')
     }
 
     private sendTx(raw: string) {

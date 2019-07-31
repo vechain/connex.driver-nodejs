@@ -13,9 +13,19 @@ export abstract class DriverNoVendor implements Connex.Driver {
     constructor(
         private readonly net: Net,
         readonly genesis: Connex.Thor.Block,
-        initialHead: Connex.Thor.Status['head']
+        initialHead?: Connex.Thor.Status['head']
     ) {
-        this.head = initialHead
+        if (initialHead) {
+            this.head = initialHead
+        } else {
+            this.head = {
+                id: genesis.id,
+                number: genesis.number,
+                timestamp: genesis.timestamp,
+                parentID: genesis.parentID,
+                txsFeatures: genesis.txsFeatures
+            }
+        }
         this.headTrackerLoop()
     }
 

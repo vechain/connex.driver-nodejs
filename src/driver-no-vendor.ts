@@ -85,29 +85,13 @@ export abstract class DriverNoVendor implements Connex.Driver {
             this.httpPost('logs/transfer', arg))
     }
     public abstract buildTx(
-        msg: Array<{
-            to: string | null;
-            value: string;
-            data: string;
-            comment?: string;
-            abi?: object;
-        }>,
-        options: {
-            signer?: string;
-            gas?: number;
-            dependsOn?: string;
-            link?: string;
-            comment?: string;
-        }
-    ): Promise<{
-        origin: string;
-        raw: string;
-        sign(delegation?: { signature?: string; error?: Error; }): Promise<Connex.Vendor.TxResponse>;
-    }>
+        msg: Connex.Driver.BuildTxArg,
+        option: Connex.Driver.BuildTxOption
+    ): Promise<Connex.Driver.BuildTxResult>
     public abstract signCert(
-        msg: Connex.Vendor.CertMessage,
-        options: { signer?: string; link?: string; }
-    ): Promise<Connex.Vendor.CertResponse>
+        msg: Connex.Driver.SignCertArg,
+        options: Connex.Driver.SignCertOption
+    ): Promise<Connex.Driver.SignCertResult>
     public abstract isAddressOwned(addr: string): boolean
     //////
     protected httpGet(path: string, query?: object) {

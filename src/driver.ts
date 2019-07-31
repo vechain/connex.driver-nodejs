@@ -50,28 +50,9 @@ export class Driver extends DriverNoVendor {
     }
 
     public async buildTx(
-        msg: Array<{
-            to: string | null
-            value: string
-            data: string
-            comment?: string
-            abi?: object
-        }>,
-        options: {
-            signer?: string | undefined;
-            gas?: number | undefined;
-            dependsOn?: string | undefined;
-            link?: string | undefined;
-            comment?: string | undefined;
-        }
-    ): Promise<{
-        origin: string
-        raw: string
-        sign(delegation?: {
-            signature?: string
-            error?: Error
-        }): Promise<Connex.Vendor.TxResponse>
-    }> {
+        msg: Connex.Driver.BuildTxArg,
+        options: Connex.Driver.BuildTxOption
+    ): Promise<Connex.Driver.BuildTxResult> {
         const key = this.findKey(options.signer)
 
         const clauses = msg.map(c => ({ to: c.to, value: c.value, data: c.data }))
@@ -130,9 +111,9 @@ export class Driver extends DriverNoVendor {
     }
 
     public async signCert(
-        msg: Connex.Vendor.CertMessage,
-        options: { signer?: string | undefined; link?: string | undefined; }
-    ) {
+        msg: Connex.Driver.SignCertArg,
+        options: Connex.Driver.SignCertOption
+    ): Promise<Connex.Driver.SignCertResult> {
         const key = this.findKey(options.signer)
 
         const annex = {

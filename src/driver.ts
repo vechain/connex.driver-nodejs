@@ -94,7 +94,7 @@ export class Driver extends DriverNoVendor {
                 let tx
                 if (delegation && !delegation.error) {
                     tx = delegatedTx
-                    const originSig = key.sign(tx.signingHash())
+                    const originSig = await key.sign(tx.signingHash())
                     tx.signature = Buffer.concat([
                         originSig,
                         Buffer.from(delegation.signature!.slice(2), 'hex')])
@@ -106,7 +106,7 @@ export class Driver extends DriverNoVendor {
                         // fallback to non-vip191 tx
                     }
                     tx = new Transaction(txBody)
-                    tx.signature = key.sign(tx.signingHash())
+                    tx.signature = await key.sign(tx.signingHash())
                 }
                 const raw = '0x' + tx.encode().toString('hex')
                 if (this.onTxCommit) {
@@ -142,10 +142,10 @@ export class Driver extends DriverNoVendor {
             ...msg,
             ...annex
         })
-        const signature = '0x' + key.sign(cry.blake2b256(unsigned)).toString('hex')
+        const signature = await key.sign(cry.blake2b256(unsigned))
         return {
             annex,
-            signature
+            signature: '0x' + signature.toString('hex')
         }
     }
     public isAddressOwned(addr: string) {

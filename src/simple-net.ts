@@ -1,5 +1,5 @@
 import { Net } from './interfaces'
-import Axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios'
+import Axios, { AxiosInstance, AxiosError } from 'axios'
 
 /** class simply implements Net interface */
 export class SimpleNet implements Net {

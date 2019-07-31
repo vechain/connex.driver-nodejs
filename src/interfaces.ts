@@ -43,6 +43,6 @@ export namespace Wallet {
          * @param msgHash message hash
          * @returns signature
          */
-        sign(msgHash: Buffer): Buffer
+        sign(msgHash: Buffer): Promise<Buffer>
     }
 }

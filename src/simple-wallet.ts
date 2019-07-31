@@ -10,7 +10,7 @@ export class SimpleWallet implements Wallet {
             return {
                 address: k.address,
                 sign(msgHash: Buffer) {
-                    return cry.secp256k1.sign(msgHash, k.privateKey)
+                    return Promise.resolve(cry.secp256k1.sign(msgHash, k.privateKey))
                 }
             }
         })

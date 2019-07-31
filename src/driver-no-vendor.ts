@@ -4,7 +4,7 @@ import * as NodeURL from 'url'
 import { PromInt, InterruptedError } from './promint'
 
 /** class implements Connex.Driver leaves out Vendor related methods */
-export class DriverNoVendor implements Connex.Driver {
+export abstract class DriverNoVendor implements Connex.Driver {
     public head: Connex.Thor.Status['head']
 
     private headResolvers = [] as Array<() => void>
@@ -59,16 +59,31 @@ export class DriverNoVendor implements Connex.Driver {
     public filterTransferLogs(arg: object) {
         return this.httpPost('logs/transfer', arg)
     }
-    public buildTx(msg: any, options: any): Promise<any> {
-        throw new Error('Method not implemented.')
-    }
-    public signCert(msg: any, options: any): Promise<any> {
-        throw new Error('Method not implemented.')
-    }
-    public isAddressOwned(addr: string): boolean {
-        throw new Error('Method not implemented.')
-    }
-
+    public abstract buildTx(
+        msg: Array<{
+            to: string | null;
+            value: string;
+            data: string;
+            comment?: string;
+            abi?: object;
+        }>,
+        options: {
+            signer?: string;
+            gas?: number;
+            dependsOn?: string;
+            link?: string;
+            comment?: string;
+        }
+    ): Promise<{
+        origin: string;
+        raw: string;
+        sign(delegation?: { signature?: string; error?: Error; }): Promise<Connex.Vendor.TxResponse>;
+    }>
+    public abstract signCert(
+        msg: Connex.Vendor.CertMessage,
+        options: { signer?: string; link?: string; }
+    ): Promise<Connex.Vendor.CertResponse>
+    public abstract isAddressOwned(addr: string): boolean
     //////
     protected httpGet(path: string, query?: object) {
         return this.net.http('GET', path, {

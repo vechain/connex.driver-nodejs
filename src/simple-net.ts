@@ -38,10 +38,10 @@ export class SimpleNet implements Net {
         }
     }
     public openWebSocketReader(path: string) {
-        const baseURL = this.baseURL
-            .replace(/^https:/i, 'wss:')
+        const url = NodeURL.resolve(this.baseURL, path)
             .replace(/^http:/i, 'ws:')
-        return new SimpleWebSocketReader(NodeURL.resolve(baseURL, path), this.wsTimeout)
+            .replace(/^https:/i, 'wss:')
+        return new SimpleWebSocketReader(url, this.wsTimeout)
     }
 }
 

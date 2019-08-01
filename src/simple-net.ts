@@ -1,11 +1,17 @@
 import { Net } from './interfaces'
 import Axios, { AxiosInstance, AxiosError } from 'axios'
+import { SimpleWebSocketReader } from './simple-websocket-reader'
+import * as NodeURL from 'url'
 
 /** class simply implements Net interface */
 export class SimpleNet implements Net {
     private readonly axios: AxiosInstance
 
-    constructor(readonly baseURL: string, timeout = 15 * 1000) {
+    constructor(
+        readonly baseURL: string,
+        timeout = 15 * 1000,
+        private readonly wsTimeout = 30 * 1000
+    ) {
         this.axios = Axios.create({
             baseURL,
             timeout,
@@ -30,6 +36,12 @@ export class SimpleNet implements Net {
         } catch (err) {
             throw convertError(err)
         }
+    }
+    public openWebSocketReader(path: string) {
+        const baseURL = this.baseURL
+            .replace(/^https:/i, 'wss:')
+            .replace(/^http:/i, 'ws:')
+        return new SimpleWebSocketReader(NodeURL.resolve(baseURL, path), this.wsTimeout)
     }
 }
 

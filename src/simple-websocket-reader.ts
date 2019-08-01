@@ -1,20 +1,18 @@
 import * as WebSocket from 'isomorphic-ws'
+import { Net } from './interfaces'
 
-export class WebSocketReader {
+export class SimpleWebSocketReader implements Net.WebSocketReader {
     private readonly ws: WebSocket
-    private callbacks = [] as Array<{
-        resolve(value: any): void
-        reject(reason: Error): void
-    }>
+    private callbacks = [] as Array<(data: any, error?: Error) => void>
     private error?: Error
-    constructor(url: string) {
+
+    constructor(url: string, private readonly timeout = 30 * 1000) {
         this.ws = new WebSocket(url)
         this.ws.onmessage = ev => {
             try {
-                const value = JSON.parse(ev.data as string)
                 const cbs = this.callbacks
                 this.callbacks = []
-                cbs.forEach(cb => cb.resolve(value))
+                cbs.forEach(cb => cb(ev.data))
             } catch (err) {
                 this.setError(err)
                 this.ws.close()
@@ -35,9 +33,16 @@ export class WebSocketReader {
                 return reject(this.error)
             }
 
-            this.callbacks.push({
-                resolve,
-                reject
+            const timer = setTimeout(() => {
+                reject(new Error('ws read timeout'))
+            }, this.timeout)
+
+            this.callbacks.push((data, err) => {
+                clearTimeout(timer)
+                if (err) {
+                    return reject(err)
+                }
+                resolve(data)
             })
         })
     }
@@ -52,7 +57,7 @@ export class WebSocketReader {
 
             const cbs = this.callbacks
             this.callbacks = []
-            cbs.forEach(cb => cb.reject(err))
+            cbs.forEach(cb => cb(null, err))
         }
     }
 }

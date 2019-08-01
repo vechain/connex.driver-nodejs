@@ -1,6 +1,4 @@
 import { Net } from './interfaces'
-import { WebSocketReader } from './websocket-reader'
-import * as NodeURL from 'url'
 import { PromInt, InterruptedError } from './promint'
 import { Cache } from './cache'
 import { blake2b256 } from 'thor-devkit/dist/cry/blake2b'
@@ -116,12 +114,13 @@ export abstract class DriverNoVendor implements Connex.Driver {
     }
 
     private async headTrackerLoop() {
-        let wsr: WebSocketReader | null = null
+        let wsr: Net.WebSocketReader | null = null
         let counter = 0
         for (; ;) {
             if (wsr) {
                 try {
-                    const beat: Beat = await this.int.wrap(wsr.read())
+                    const data = await this.int.wrap(wsr.read())
+                    const beat: Beat = JSON.parse(data)
                     if (!beat.obsolete && beat.id !== this.head.id && beat.number >= this.head.number) {
                         this.head = {
                             id: beat.id,
@@ -163,13 +162,16 @@ export abstract class DriverNoVendor implements Connex.Driver {
                         counter++
                         if (counter > 3) {
                             counter = 0
-                            const wsURL = NodeURL.resolve(this.net.baseURL,
-                                `subscriptions/beat?x-genesis-id=${this.genesis.id}&pos=${this.head.parentID}`)
-                                .replace(/^https:/i, 'wss:')
-                                .replace(/^http:/i, 'ws:')
+                            const wsPath =
+                                `subscriptions/beat?pos=${this.head.parentID}`
 
-                            wsr = new WebSocketReader(wsURL)
-                            continue
+                            try {
+                                wsr = this.net.openWebSocketReader(wsPath)
+                                continue
+                            } catch (err) {
+                                // tslint:disable-next-line: no-console
+                                console.warn('headTracker(openws):', err)
+                            }
                         }
                     }
                 } catch (err) {

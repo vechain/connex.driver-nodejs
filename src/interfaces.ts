@@ -16,6 +16,12 @@ export interface Net {
         path: string,
         params?: Net.Params
     ): Promise<any>
+
+    /**
+     * open websocket reader on path
+     * @param path
+     */
+    openWebSocketReader(path: string): Net.WebSocketReader
 }
 
 export namespace Net {
@@ -24,6 +30,13 @@ export namespace Net {
         query?: object
         body?: any // JSON encoded
         headers?: object
+    }
+
+    /** websocket reader */
+    export interface WebSocketReader {
+        /** read data */
+        read(): Promise<any>
+        close(): void
     }
 }
 

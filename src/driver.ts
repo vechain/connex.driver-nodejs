@@ -49,14 +49,13 @@ export class Driver extends DriverNoVendor {
         super(net, genesis, initialHead)
     }
 
-    public async buildTx(
-        msg: Connex.Driver.BuildTxArg,
-        options: Connex.Driver.BuildTxOption
-    ): Promise<Connex.Driver.BuildTxResult> {
-        const key = this.findKey(options.signer)
-
+    public async signTx(
+        msg: Connex.Driver.SignTxArg,
+        option: Connex.Driver.SignTxOption,
+    ): Promise<Connex.Driver.SignTxResult> {
+        const key = this.findKey(option.signer)
         const clauses = msg.map(c => ({ to: c.to, value: c.value, data: c.data }))
-        const gas = options.gas ||
+        const gas = option.gas ||
             (await this.estimateGas(clauses, key.address))
 
         const txBody: Transaction.Body = {
@@ -66,48 +65,48 @@ export class Driver extends DriverNoVendor {
             clauses,
             gasPriceCoef: this.txParams.gasPriceCoef,
             gas,
-            dependsOn: options.dependsOn || null,
+            dependsOn: option.dependsOn || null,
             nonce: '0x' + randomBytes(8).toString('hex')
         }
-        const delegatedTx = new Transaction({ ...txBody, reserved: { features: 1/* vip191 */ } })
-        return {
-            raw: '0x' + delegatedTx.encode().toString('hex'),
-            origin: key.address,
-            sign: async delegation => {
-                let tx
-                if (delegation && !delegation.error) {
-                    tx = delegatedTx
-                    const originSig = await key.sign(tx.signingHash())
-                    tx.signature = Buffer.concat([
-                        originSig,
-                        Buffer.from(delegation.signature!.slice(2), 'hex')])
 
-                } else {
-                    if (delegation && delegation.error) {
-                        // tslint:disable-next-line: no-console
-                        console.warn('tx delegation error: ', delegation.error)
-                        // fallback to non-vip191 tx
-                    }
-                    tx = new Transaction(txBody)
-                    tx.signature = await key.sign(tx.signingHash())
-                }
-                const raw = '0x' + tx.encode().toString('hex')
-                if (this.onTxCommit) {
-                    this.onTxCommit({
-                        id: tx.id!,
-                        raw,
-                        resend: async () => {
-                            await this.sendTx(raw)
-                        }
-                    })
-                }
-                await this.sendTx(raw)
-                return {
-                    txid: tx.id!,
-                    signer: key.address
-                }
+        let tx: Transaction | undefined
+        if (option.delegationHandler) {
+            const delegatedTx = new Transaction({ ...txBody, reserved: { features: 1/* vip191 */ } })
+            const originSig = await key.sign(delegatedTx.signingHash())
+            try {
+                const result = await option.delegationHandler({
+                    raw: '0x' + delegatedTx.encode().toString('hex'),
+                    origin: key.address
+                })
+                delegatedTx.signature = Buffer.concat([originSig, Buffer.from(result.signature.slice(2), 'hex')])
+                tx = delegatedTx
+            } catch (err) {
+                // tslint:disable-next-line: no-console
+                console.warn('tx delegation error: ', err)
+                // fallback to non-vip191 tx
             }
         }
+        if (!tx) {
+            tx = new Transaction(txBody)
+            tx.signature = await key.sign(tx.signingHash())
+        }
+
+        const raw = '0x' + tx.encode().toString('hex')
+        if (this.onTxCommit) {
+            this.onTxCommit({
+                id: tx.id!,
+                raw,
+                resend: async () => {
+                    await this.sendTx(raw)
+                }
+            })
+        }
+        await this.sendTx(raw)
+        return {
+            txid: tx.id!,
+            signer: key.address
+        }
+
     }
 
     public async signCert(

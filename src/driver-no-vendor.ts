@@ -82,10 +82,10 @@ export abstract class DriverNoVendor implements Connex.Driver {
         return this.cache.getTied(cacheKey, this.head.id, () =>
             this.httpPost('logs/transfer', arg))
     }
-    public abstract buildTx(
-        msg: Connex.Driver.BuildTxArg,
-        option: Connex.Driver.BuildTxOption
-    ): Promise<Connex.Driver.BuildTxResult>
+    public abstract signTx(
+        msg: Connex.Driver.SignTxArg,
+        option: Connex.Driver.SignTxOption
+    ): Promise<Connex.Driver.SignTxResult>
     public abstract signCert(
         msg: Connex.Driver.SignCertArg,
         options: Connex.Driver.SignCertOption

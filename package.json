@@ -1,6 +1,6 @@
 {
   "name": "@vechain/connex.driver-nodejs",
-  "version": "1.0.0-beta-14",
+  "version": "1.0.0-beta-16",
   "description": "Connex framework driver implementation in NodeJS",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -12,7 +12,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/qianbin/connex.driver-nodejs.git"
+    "url": "git+https://github.com/vechain/connex.driver-nodejs.git"
   },
   "keywords": [
     "Connex",
@@ -23,9 +23,9 @@
   "author": "qianbin",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/qianbin/connex.driver-nodejs/issues"
+    "url": "https://github.com/vechain/connex.driver-nodejs/issues"
   },
-  "homepage": "https://github.com/qianbin/connex.driver-nodejs#readme",
+  "homepage": "https://github.com/vechain/connex.driver-nodejs#readme",
   "devDependencies": {
     "@types/lru-cache": "^5.1.0",
     "@types/ws": "^6.0.1",

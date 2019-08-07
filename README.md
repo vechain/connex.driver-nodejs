@@ -1,5 +1,7 @@
 # Connex Driver for NodeJS
 
+[![npm version](https://badge.fury.io/js/%40vechain%2Fconnex.driver-nodejs.svg)](https://badge.fury.io/js/%40vechain%2Fconnex.driver-nodejs)
+
 It drives Connex Framework to work in NodeJS environment. Now you can use Connex in NodeJS backend project.
 
 ## Installation

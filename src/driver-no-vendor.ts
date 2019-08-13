@@ -205,14 +205,3 @@ interface Beat {
     txsFeatures?: number
     obsolete: boolean
 }
-
-async function x() {
-throw new Error('11')
-}
-let v = x()
-
-console.log(2)
-
-v.catch(()=>{
-
-})

@@ -131,7 +131,7 @@ export class Driver extends DriverNoVendor {
         }
     }
     public isAddressOwned(addr: string) {
-        return this.wallet ? this.wallet.list.findIndex(k => k.address === addr) >= 0 : false
+        return Promise.resolve(this.wallet ? this.wallet.list.findIndex(k => k.address === addr) >= 0 : false)
     }
 
     private findKey(addr?: string) {

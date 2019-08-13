@@ -77,7 +77,7 @@ export abstract class DriverNoVendor implements Connex.Driver {
         return this.cache.getTied(cacheKey, this.head.id, () =>
             this.httpPost('logs/event', arg))
     }
-    public filterTransferLogs(arg: object) {
+    public filterTransferLogs(arg: Connex.Driver.FilterTransferLogsArg) {
         const cacheKey = `transfer-${blake2b256(JSON.stringify(arg)).toString('hex')}`
         return this.cache.getTied(cacheKey, this.head.id, () =>
             this.httpPost('logs/transfer', arg))
@@ -90,7 +90,7 @@ export abstract class DriverNoVendor implements Connex.Driver {
         msg: Connex.Driver.SignCertArg,
         options: Connex.Driver.SignCertOption
     ): Promise<Connex.Driver.SignCertResult>
-    public abstract isAddressOwned(addr: string): boolean
+    public abstract isAddressOwned(addr: string): Promise<boolean>
     //////
     protected httpGet(path: string, query?: object) {
         return this.net.http('GET', path, {
@@ -205,3 +205,14 @@ interface Beat {
     txsFeatures?: number
     obsolete: boolean
 }
+
+async function x() {
+throw new Error('11')
+}
+let v = x()
+
+console.log(2)
+
+v.catch(()=>{
+
+})

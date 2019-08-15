@@ -109,7 +109,8 @@ export abstract class DriverNoVendor implements Connex.Driver {
 
     private get headerValidator() {
         return (headers: Record<string, string>) => {
-            if (headers['x-genesis-id'] !== this.genesis.id) {
+            const xgid = headers['x-genesis-id']
+            if (xgid && xgid !== this.genesis.id) {
                 throw new Error(`responded 'x-genesis-id' not matched`)
             }
         }

@@ -27,9 +27,10 @@ export interface Net {
 export namespace Net {
     /** http request params */
     export interface Params {
-        query?: object
-        body?: any // JSON encoded
-        headers?: object
+        query?: Record<string, string>
+        body?: any // will be encoded to JSON
+        headers?: Record<string, string>
+        validateResponseHeader?: (headers: Record<string, string>) => void
     }
 
     /** websocket reader */

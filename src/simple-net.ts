@@ -1,7 +1,7 @@
 import { Net } from './interfaces'
 import Axios, { AxiosInstance, AxiosError } from 'axios'
 import { SimpleWebSocketReader } from './simple-websocket-reader'
-import * as NodeURL from 'url'
+import { resolve } from 'url'
 
 /** class simply implements Net interface */
 export class SimpleNet implements Net {
@@ -22,7 +22,7 @@ export class SimpleNet implements Net {
     public async http(
         method: 'GET' | 'POST',
         path: string,
-        params?: { query?: object; body?: any; headers?: object; }): Promise<any> {
+        params?: Net.Params): Promise<any> {
         params = params || {}
         try {
             const resp = await this.axios.request({
@@ -32,13 +32,19 @@ export class SimpleNet implements Net {
                 headers: params.headers,
                 params: params.query
             })
+            if (params.validateResponseHeader) {
+                params.validateResponseHeader(resp.headers)
+            }
             return resp.data
         } catch (err) {
-            throw convertError(err)
+            if (err.isAxiosError) {
+                throw convertError(err)
+            }
+            throw new Error(`${method} ${resolve(this.baseURL, path)}: ${err.message}`)
         }
     }
     public openWebSocketReader(path: string) {
-        const url = NodeURL.resolve(this.baseURL, path)
+        const url = resolve(this.baseURL, path)
             .replace(/^http:/i, 'ws:')
             .replace(/^https:/i, 'wss:')
         return new SimpleWebSocketReader(url, this.wsTimeout)

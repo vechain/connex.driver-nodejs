@@ -16,8 +16,13 @@ export class Driver extends DriverNoVendor {
      */
     public static async connect(net: Net, wallet?: Wallet) {
         const genesis: Connex.Thor.Block = await net.http('GET', 'blocks/0')
-        const best: Connex.Thor.Block = await net.http('GET', 'blocks/best',
-            { headers: { 'x-genesis-id': genesis.id } })
+        const best: Connex.Thor.Block = await net.http('GET', 'blocks/best', {
+            validateResponseHeader: headers => {
+                if (headers['x-genesis-id'] !== genesis.id) {
+                    throw new Error(`responded 'x-genesis-id' not matched`)
+                }
+            }
+        })
 
         return new Driver(
             net,

@@ -92,19 +92,27 @@ export abstract class DriverNoVendor implements Connex.Driver {
     ): Promise<Connex.Driver.SignCertResult>
     public abstract isAddressOwned(addr: string): Promise<boolean>
     //////
-    protected httpGet(path: string, query?: object) {
+    protected httpGet(path: string, query?: Record<string, string>) {
         return this.net.http('GET', path, {
             query,
-            headers: { 'x-genesis-id': this.genesis.id }
+            validateResponseHeader: this.headerValidator
         })
     }
 
-    protected httpPost(path: string, body: any, query?: object) {
+    protected httpPost(path: string, body: any, query?: Record<string, string>) {
         return this.net.http('POST', path, {
             query,
-            headers: { 'x-genesis-id': this.genesis.id },
-            body
+            body,
+            validateResponseHeader: this.headerValidator
         })
+    }
+
+    private get headerValidator() {
+        return (headers: Record<string, string>) => {
+            if (headers['x-genesis-id'] !== this.genesis.id) {
+                throw new Error(`responded 'x-genesis-id' not matched`)
+            }
+        }
     }
 
     private emitNewHead() {

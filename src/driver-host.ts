@@ -23,20 +23,16 @@ export class DriverHost {
     private readonly wss: WebSocket.Server
     constructor(
         server: Http.Server | Https.Server,
-        acceptor: (ws: WebSocket, request: Http.IncomingMessage) => Promise<Connex.Driver>
+        path: string,
+        acceptor: DriverHost.Acceptor
     ) {
         this.wss = new WebSocket.Server({
             server,
-            path: '/connex-driver-host'
+            path
         })
 
         this.wss.on('connection', async (ws, req) => {
-            try {
-                const driver = await acceptor(ws, req)
-                this.handleConnection(ws, driver)
-            } catch (err) {
-                ws.close()
-            }
+            this.handleConnection(ws, req, acceptor)
         })
     }
 
@@ -44,7 +40,7 @@ export class DriverHost {
         this.wss.close()
     }
 
-    private handleConnection(ws: WebSocket, driver: Connex.Driver) {
+    private handleConnection(ws: WebSocket, req: Http.IncomingMessage, acceptor: DriverHost.Acceptor) {
         const rpc = new JSONRPC((data, isRequest) => {
             if (!isRequest) {
                 data = ' ' + data
@@ -60,19 +56,33 @@ export class DriverHost {
                 console.warn('receive jsonrpc payload: ', err)
             })
         })
+        let driver: Connex.Driver | undefined
 
         rpc.serve(method => {
             if (method === 'connect') {
-                return () => ({
-                    genesis: driver.genesis,
-                    head: driver.head
-                })
+                return async (genesisId?: string) => {
+                    if (driver) {
+                        throw new Error('already accepted')
+                    }
+                    driver = await acceptor(ws, req, genesisId)
+                    return {
+                        genesis: driver.genesis,
+                        head: driver.head
+                    }
+                }
             }
             if (methods.includes(method as any)) {
-                return (args: any[]) => {
+                return (...args: any[]) => {
+                    if (!driver) {
+                        throw new Error('not accepted')
+                    }
                     return (driver as any)[method](...args)
                 }
             }
         })
     }
+}
+
+export namespace DriverHost {
+    export type Acceptor = (ws: WebSocket, request: Http.IncomingMessage, genesisId?: string) => Promise<Connex.Driver>
 }

@@ -2,6 +2,7 @@ import { Net } from './interfaces'
 import { PromInt, InterruptedError } from './promint'
 import { Cache } from './cache'
 import { blake2b256 } from 'thor-devkit/dist/cry/blake2b'
+import { sleep } from './common'
 
 /** class implements Connex.Driver leaves out Vendor related methods */
 export abstract class DriverNoVendor implements Connex.Driver {
@@ -198,10 +199,6 @@ export abstract class DriverNoVendor implements Connex.Driver {
             }
         }
     }
-}
-
-function sleep(ms: number) {
-    return new Promise(resolve => setTimeout(resolve, ms))
 }
 
 interface Beat {

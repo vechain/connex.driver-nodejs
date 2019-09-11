@@ -15,7 +15,7 @@ function openWebSocket(url: string) {
         }
         ws.onerror = ev => {
             offWebSocket(ws)
-            reject(ev.error)
+            reject(ev.error || new Error('websocket error'))
             ws.close()
         }
     })

@@ -5,7 +5,7 @@ import { blake2b256 } from 'thor-devkit/dist/cry/blake2b'
 import { sleep } from './common'
 
 /** class implements Connex.Driver leaves out Vendor related methods */
-export abstract class DriverNoVendor implements Connex.Driver {
+export class DriverNoVendor implements Connex.Driver {
     public head: Connex.Thor.Status['head']
 
     private headResolvers = [] as Array<() => void>
@@ -83,15 +83,21 @@ export abstract class DriverNoVendor implements Connex.Driver {
         return this.cache.getTied(cacheKey, this.head.id, () =>
             this.httpPost('logs/transfer', arg))
     }
-    public abstract signTx(
+    public signTx(
         msg: Connex.Driver.SignTxArg,
         option: Connex.Driver.SignTxOption
-    ): Promise<Connex.Driver.SignTxResult>
-    public abstract signCert(
+    ): Promise<Connex.Driver.SignTxResult> {
+        throw new Error('not implemented')
+    }
+    public signCert(
         msg: Connex.Driver.SignCertArg,
         options: Connex.Driver.SignCertOption
-    ): Promise<Connex.Driver.SignCertResult>
-    public abstract isAddressOwned(addr: string): Promise<boolean>
+    ): Promise<Connex.Driver.SignCertResult> {
+        throw new Error(' not implemented')
+    }
+    public isAddressOwned(addr: string): Promise<boolean> {
+        return Promise.resolve(false)
+    }
     //////
     protected httpGet(path: string, query?: Record<string, string>) {
         return this.net.http('GET', path, {

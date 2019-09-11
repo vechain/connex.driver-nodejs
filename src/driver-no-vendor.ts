@@ -124,79 +124,79 @@ export abstract class DriverNoVendor implements Connex.Driver {
     }
 
     private async headTrackerLoop() {
-        let wsr: Net.WebSocketReader | null = null
-        let counter = 0
+        let triggerWs = 0
         for (; ;) {
-            if (wsr) {
-                try {
-                    const data = await this.int.wrap(wsr.read())
-                    const beat: Beat = JSON.parse(data)
-                    if (!beat.obsolete && beat.id !== this.head.id && beat.number >= this.head.number) {
-                        this.head = {
-                            id: beat.id,
-                            number: beat.number,
-                            timestamp: beat.timestamp,
-                            parentID: beat.parentID,
-                            txsFeatures: beat.txsFeatures
-                        }
-                        this.cache.handleNewBlock(this.head, { k: beat.k, bits: beat.bloom })
-                        this.emitNewHead()
+            try {
+                const best = await this.int.wrap<Connex.Thor.Block>(this.httpGet('blocks/best'))
+                if (best.id !== this.head.id && best.number >= this.head.number) {
+                    this.head = {
+                        id: best.id,
+                        number: best.number,
+                        timestamp: best.timestamp,
+                        parentID: best.parentID,
+                        txsFeatures: best.txsFeatures
                     }
-                } catch (err) {
-                    // tslint:disable-next-line: no-console
-                    console.warn('headTracker(ws):', err)
-                    wsr.close()
-                    wsr = null
-                    if (err instanceof InterruptedError) {
-                        break
-                    }
-                }
-            } else {
-                // fallback to http
-                try {
-                    const best: Connex.Thor.Block = await this.int.wrap(this.httpGet('blocks/best'))
-                    if (best.id !== this.head.id && best.number >= this.head.number) {
-                        this.head = {
-                            id: best.id,
-                            number: best.number,
-                            timestamp: best.timestamp,
-                            parentID: best.parentID,
-                            txsFeatures: best.txsFeatures
-                        }
-                        this.cache.handleNewBlock(this.head, undefined, best)
-                        this.emitNewHead()
-                    }
+                    this.cache.handleNewBlock(this.head, undefined, best)
+                    this.emitNewHead()
 
                     if (Date.now() - this.head.timestamp * 1000 < 60 * 1000) {
                         // nearly synced
-                        counter++
-                        if (counter > 3) {
-                            counter = 0
-                            const wsPath =
-                                `subscriptions/beat?pos=${this.head.parentID}`
-
-                            try {
-                                wsr = this.net.openWebSocketReader(wsPath)
-                                continue
-                            } catch (err) {
-                                // tslint:disable-next-line: no-console
-                                console.warn('headTracker(openws):', err)
-                            }
-                        }
+                        triggerWs++
                     }
+                }
+            } catch (err) {
+                triggerWs = 0
+                // tslint:disable-next-line: no-console
+                console.warn('headTracker(http):', err)
+                if (err instanceof InterruptedError) {
+                    break
+                }
+            }
+
+            if (triggerWs > 2) {
+                triggerWs = 0
+                try {
+                    await this.trackWs()
                 } catch (err) {
                     // tslint:disable-next-line: no-console
-                    console.warn('headTracker(http):', err)
+                    console.warn('headTracker(ws):', err)
                     if (err instanceof InterruptedError) {
                         break
                     }
                 }
-                try {
-                    await this.int.wrap(sleep(10 * 1000))
-                } catch {
-                    break
+            }
+            try {
+                await this.int.wrap(sleep(8 * 1000))
+            } catch {
+                break
+            }
+        }
+    }
+
+    private async trackWs() {
+        const wsPath =
+            `subscriptions/beat?pos=${this.head.parentID}`
+
+        const wsr = this.net.openWebSocketReader(wsPath)
+
+        try {
+            for (; ;) {
+                const data = await this.int.wrap(wsr.read())
+                const beat: Beat = JSON.parse(data)
+                if (!beat.obsolete && beat.id !== this.head.id && beat.number >= this.head.number) {
+                    this.head = {
+                        id: beat.id,
+                        number: beat.number,
+                        timestamp: beat.timestamp,
+                        parentID: beat.parentID,
+                        txsFeatures: beat.txsFeatures
+                    }
+                    this.cache.handleNewBlock(this.head, { k: beat.k, bits: beat.bloom })
+                    this.emitNewHead()
                 }
             }
+        } finally {
+            wsr.close()
         }
     }
 }

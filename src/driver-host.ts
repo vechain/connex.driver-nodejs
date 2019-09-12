@@ -1,4 +1,4 @@
-import * as WebSocket from 'ws'
+import * as WS from 'ws/index'
 import { JSONRPC } from '@vechain/json-rpc'
 import * as Http from 'http'
 import * as Https from 'https'
@@ -20,13 +20,13 @@ const methods: Array<keyof Connex.Driver> = [
 ]
 
 export class DriverHost {
-    private readonly wss: WebSocket.Server
+    private readonly wss: WS.Server
     constructor(
         server: Http.Server | Https.Server,
         path: string,
         acceptor: DriverHost.Acceptor
     ) {
-        this.wss = new WebSocket.Server({
+        this.wss = new WS.Server({
             server,
             path
         })
@@ -40,7 +40,7 @@ export class DriverHost {
         this.wss.close()
     }
 
-    private handleConnection(ws: WebSocket, req: Http.IncomingMessage, acceptor: DriverHost.Acceptor) {
+    private handleConnection(ws: WS, req: Http.IncomingMessage, acceptor: DriverHost.Acceptor) {
         const rpc = new JSONRPC((data, isRequest) => {
             if (!isRequest) {
                 data = ' ' + data
@@ -64,7 +64,7 @@ export class DriverHost {
                     if (driver) {
                         throw new Error('already accepted')
                     }
-                    driver = await acceptor(ws, req, genesisId)
+                    driver = await acceptor(ws as any, req, genesisId)
                     return {
                         genesis: driver.genesis,
                         head: driver.head

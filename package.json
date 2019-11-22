@@ -1,6 +1,6 @@
 {
   "name": "@vechain/connex.driver-nodejs",
-  "version": "1.2.0-beta4",
+  "version": "1.2.0-beta5",
   "description": "Connex framework driver implementation in NodeJS",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -41,7 +41,7 @@
     "bignumber.js": "^9.0.0",
     "isomorphic-ws": "^4.0.1",
     "lru-cache": "^5.1.1",
-    "thor-devkit": "^1.1.0",
+    "thor-devkit": "^1.2.3",
     "ws": "^7.1.0"
   }
 }

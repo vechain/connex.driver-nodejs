@@ -2,6 +2,8 @@ import { Net } from './interfaces'
 import Axios, { AxiosInstance, AxiosError } from 'axios'
 import { SimpleWebSocketReader } from './simple-websocket-reader'
 import { resolve } from 'url'
+import { Agent as HttpAgent } from 'http'
+import { Agent as HttpsAgent } from 'https'
 
 /** class simply implements Net interface */
 export class SimpleNet implements Net {
@@ -13,6 +15,8 @@ export class SimpleNet implements Net {
         private readonly wsTimeout = 30 * 1000
     ) {
         this.axios = Axios.create({
+            httpAgent: new HttpAgent({ keepAlive: true }),
+            httpsAgent: new HttpsAgent({ keepAlive: true }),
             baseURL,
             timeout
         })

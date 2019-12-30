@@ -18,7 +18,7 @@ The [REPL playground](https://github.com/vechain/connex-repl) is a good start.
 
 ```typescript
 import { Framework } from '@vechain/connex-framework'
-import { Driver, SimpleNet, SimpleWallet } from '@vechain/connex.driver-nodejs'
+import { Driver, SimpleNet, SimpleWallet, options } from '@vechain/connex.driver-nodejs'
 
 const wallet = new SimpleWallet()
 // add account by importing private key
@@ -37,4 +37,7 @@ driver.txParams.gasPriceCoef = 128
 driver.onTxCommit = txObj => {
     // 
 }
+
+// if feel error logs annoying, you can disable it by
+options.disableErrorLog = true
 ```

@@ -2,6 +2,7 @@ import * as WS from 'ws/index'
 import { JSONRPC } from '@vechain/json-rpc'
 import * as Http from 'http'
 import * as Https from 'https'
+import { options } from './options'
 
 const methods: Array<keyof Connex.Driver> = [
     'pollHead',
@@ -52,8 +53,10 @@ export class DriverHost {
         ws.on('message', data => {
             const isRequest = (data as string)[0] !== ' '
             rpc.receive(data as string, isRequest).catch(err => {
-                // tslint:disable-next-line: no-console
-                console.warn('receive jsonrpc payload: ', err)
+                if (!options.disableErrorLog) {
+                    // tslint:disable-next-line: no-console
+                    console.warn('receive jsonrpc payload: ', err)
+                }
             })
         })
         let driver: Connex.Driver | undefined

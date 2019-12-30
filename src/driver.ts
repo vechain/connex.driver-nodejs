@@ -5,6 +5,7 @@ import { Transaction } from 'thor-devkit/dist/transaction'
 import { Certificate } from 'thor-devkit/dist/certificate'
 import { blake2b256 } from 'thor-devkit/dist/cry/blake2b'
 import { randomBytes } from 'crypto'
+import { options } from './options'
 
 /** class fully implements Connex.Driver */
 export class Driver extends DriverNoVendor {
@@ -87,8 +88,10 @@ export class Driver extends DriverNoVendor {
                 delegatedTx.signature = Buffer.concat([originSig, Buffer.from(result.signature.slice(2), 'hex')])
                 tx = delegatedTx
             } catch (err) {
-                // tslint:disable-next-line: no-console
-                console.warn('tx delegation error: ', err)
+                if (!options.disableErrorLog) {
+                    // tslint:disable-next-line: no-console
+                    console.warn('tx delegation error: ', err)
+                }
                 // fallback to non-vip191 tx
             }
         }

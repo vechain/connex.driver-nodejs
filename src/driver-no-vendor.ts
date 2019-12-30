@@ -3,6 +3,7 @@ import { PromInt, InterruptedError } from './promint'
 import { Cache } from './cache'
 import { blake2b256 } from 'thor-devkit/dist/cry/blake2b'
 import { sleep } from './common'
+import { options } from './options'
 
 /** class implements Connex.Driver leaves out Vendor related methods */
 export class DriverNoVendor implements Connex.Driver {
@@ -152,8 +153,10 @@ export class DriverNoVendor implements Connex.Driver {
                 }
             } catch (err) {
                 triggerWs = 0
-                // tslint:disable-next-line: no-console
-                console.warn('headTracker(http):', err)
+                if (!options.disableErrorLog) {
+                    // tslint:disable-next-line: no-console
+                    console.warn('headTracker(http):', err)
+                }
                 if (err instanceof InterruptedError) {
                     break
                 }
@@ -164,8 +167,10 @@ export class DriverNoVendor implements Connex.Driver {
                 try {
                     await this.trackWs()
                 } catch (err) {
-                    // tslint:disable-next-line: no-console
-                    console.warn('headTracker(ws):', err)
+                    if (!options.disableErrorLog) {
+                        // tslint:disable-next-line: no-console
+                        console.warn('headTracker(ws):', err)
+                    }
                     if (err instanceof InterruptedError) {
                         break
                     }
